@@ -40,14 +40,14 @@ const MAP_HEIGHT = 600;
 const ROAD_LABEL_DISPLAY = true;
 // update for now 2024/11/17 the privacy mode is true
 //set to `true` if you want to display only the routes without showing the map.
-const PRIVACY_MODE = false;
+const PRIVACY_MODE = true;
 // update for now 2024/11/17 the lights on default is false
 //set to `false` if you want to make light off as default, only effect when `PRIVACY_MODE` = false
 const LIGHTS_ON =false;
 //set to `true` if you want to show the 'Elevation Gain' column
 const SHOW_ELEVATION_GAIN = false;
 // richer title for the activity types (like garmin style)
-const RICH_TITLE = false;
+const RICH_TITLE = true;
 
 // IF you outside China please make sure IS_CHINESE = false
 const IS_CHINESE = true;
@@ -78,7 +78,7 @@ const RUN_TREADMILL_TITLE = IS_CHINESE ? '跑步机' : 'Treadmill Run';
 const HIKING_TITLE = IS_CHINESE ? '徒步' : 'Hiking';
 const CYCLING_TITLE = IS_CHINESE ? '骑行' : 'Cycling';
 const SKIING_TITLE = IS_CHINESE ? '滑雪' : 'Skiing';
-const WALKING_TITLE = IS_CHINESE ? '步行' : 'Walking';
+const WALKING_TITLE = IS_CHINESE ? '慢步' : 'Walking';
 const ACTIVITY_COUNT_TITLE = IS_CHINESE ? '活动次数' : 'Activity Count';
 const MAX_DISTANCE_TITLE = IS_CHINESE ? '最远距离' : 'Max Distance';
 const MAX_SPEED_TITLE = IS_CHINESE ? '最快速度' : 'Max Speed';
@@ -125,27 +125,11 @@ const ACTIVITY_TOTAL = {
 };
 
 export {
-  USE_GOOGLE_ANALYTICS,
-  GOOGLE_ANALYTICS_TRACKING_ID,
-  CHINESE_LOCATION_INFO_MESSAGE_FIRST,
-  CHINESE_LOCATION_INFO_MESSAGE_SECOND,
-  MAPBOX_TOKEN,
-  MUNICIPALITY_CITIES_ARR,
-  MAP_LAYER_LIST,
-  IS_CHINESE,
-  ROAD_LABEL_DISPLAY,
-  INFO_MESSAGE,
-  RUN_TITLES,
-  USE_ANIMATION_FOR_GRID,
-  USE_DASH_LINE,
-  LINE_OPACITY,
-  MAP_HEIGHT,
-  PRIVACY_MODE,
-  LIGHTS_ON,
-  SHOW_ELEVATION_GAIN,
-  RICH_TITLE,
-  ACTIVITY_TYPES,
-  ACTIVITY_TOTAL
+  ACTIVITY_TOTAL, ACTIVITY_TYPES, CHINESE_LOCATION_INFO_MESSAGE_FIRST,
+  CHINESE_LOCATION_INFO_MESSAGE_SECOND, GOOGLE_ANALYTICS_TRACKING_ID, INFO_MESSAGE, IS_CHINESE, LIGHTS_ON, LINE_OPACITY,
+  MAP_HEIGHT, MAP_LAYER_LIST, MAPBOX_TOKEN,
+  MUNICIPALITY_CITIES_ARR, PRIVACY_MODE, RICH_TITLE, ROAD_LABEL_DISPLAY, RUN_TITLES, SHOW_ELEVATION_GAIN, USE_ANIMATION_FOR_GRID,
+  USE_DASH_LINE, USE_GOOGLE_ANALYTICS
 };
 
 const nike = 'rgb(224,237,94)'; // if you want change the main color change here src/styles/variables.scss

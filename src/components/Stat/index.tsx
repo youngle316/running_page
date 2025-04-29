@@ -11,7 +11,7 @@ interface IStatProperties {
 const Stat = ({
   value,
   description,
-  className = 'pb-2 w-full',
+  className = 'pb-2',
   citySize,
   onClick,
 }: IStatProperties) => (

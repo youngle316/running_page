@@ -1,11 +1,11 @@
-import * as mapboxPolyline from '@mapbox/polyline';
-import gcoord from 'gcoord';
-import { WebMercatorViewport } from 'viewport-mercator-project';
-import { chinaGeojson, RPGeometry } from '@/static/run_countries';
-import worldGeoJson from '@surbowl/world-geo-json-zh/world.zh.json';
 import { chinaCities } from '@/static/city';
-import { MAIN_COLOR, MUNICIPALITY_CITIES_ARR, NEED_FIX_MAP, RUN_TITLES, ACTIVITY_TYPES, RICH_TITLE, CYCLING_COLOR, HIKING_COLOR, WALKING_COLOR, SWIMMING_COLOR, RUN_COLOR, RUN_TRAIL_COLOR } from './const';
+import { chinaGeojson, RPGeometry } from '@/static/run_countries';
+import * as mapboxPolyline from '@mapbox/polyline';
+import worldGeoJson from '@surbowl/world-geo-json-zh/world.zh.json';
+import gcoord from 'gcoord';
 import { FeatureCollection, LineString } from 'geojson';
+import { WebMercatorViewport } from 'viewport-mercator-project';
+import { ACTIVITY_TYPES, CYCLING_COLOR, HIKING_COLOR, MAIN_COLOR, MUNICIPALITY_CITIES_ARR, NEED_FIX_MAP, RICH_TITLE, RUN_COLOR, RUN_TITLES, RUN_TRAIL_COLOR, SWIMMING_COLOR, WALKING_COLOR } from './const';
 
 export type Coordinate = [number, number];
 
@@ -278,7 +278,7 @@ const getActivitySport = (act: Activity): string => {
   else if (act.type === 'cycling') {
     return ACTIVITY_TYPES.CYCLING_TITLE;
   }
-  else if (act.type === 'walking') {
+  else if (act.type === 'walking' || act.type === 'Walk') {
     return ACTIVITY_TYPES.WALKING_TITLE;
   }
   // if act.type contains 'skiing'
@@ -291,11 +291,12 @@ const getActivitySport = (act: Activity): string => {
 const titleForRun = (run: Activity): string => {
   if (RICH_TITLE) {
     // 1. try to use user defined name
-    if (run.name != '') {
-      return run.name;
-    }
+    // if (run.name != '') {
+    //   return run.name;
+    // }
+
     // 2. try to use location+type if the location is available, eg. 'Shanghai Run'
-    const { city, province } = locationForRun(run);
+    const { city } = locationForRun(run);
     const activity_sport = getActivitySport(run);
     if (city && city.length > 0 && activity_sport.length > 0) {
       return `${city} ${activity_sport}`;
@@ -405,22 +406,8 @@ const sortDateFunc = (a: Activity, b: Activity) => {
 const sortDateFuncReverse = (a: Activity, b: Activity) => sortDateFunc(b, a);
 
 export {
-  titleForShow,
-  formatPace,
-  scrollToMap,
-  locationForRun,
-  intComma,
-  pathForRun,
-  geoJsonForRuns,
-  geoJsonForMap,
-  titleForRun,
-  filterYearRuns,
-  filterCityRuns,
-  filterTitleRuns,
-  filterAndSortRuns,
-  sortDateFunc,
-  sortDateFuncReverse,
-  getBoundsForGeoData,
-  formatRunTime,
-  convertMovingTime2Sec,
+  convertMovingTime2Sec, filterAndSortRuns, filterCityRuns,
+  filterTitleRuns, filterYearRuns, formatPace, formatRunTime, geoJsonForMap, geoJsonForRuns, getBoundsForGeoData, intComma, locationForRun, pathForRun, scrollToMap, sortDateFunc,
+  sortDateFuncReverse, titleForRun, titleForShow
 };
+

@@ -1,11 +1,10 @@
-import { lazy, Suspense } from 'react';
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
-import { formatPace } from '@/utils/utils';
 import useHover from '@/hooks/useHover';
-import { yearStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
-import { SHOW_ELEVATION_GAIN } from "@/utils/const";
+import { formatPace } from '@/utils/utils';
+import { yearStats } from '@assets/index';
+import { lazy, Suspense } from 'react';
 
 const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) => void }) => {
   let { activities: runs, years } = useActivities();
@@ -26,7 +25,7 @@ const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) =>
   let heartRateNullCount = 0;
   let totalMetersAvail = 0;
   let totalSecondsAvail = 0;
-  runs.forEach((run) => {
+  runs.filter((run) => run.type === 'Run').forEach((run) => {
     sumDistance += run.distance || 0;
     sumElevationGain += run.elevation_gain || 0;
     if (run.average_speed) {
@@ -47,11 +46,18 @@ const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) =>
   });
   sumDistance = parseFloat((sumDistance / 1000.0).toFixed(1));
   sumElevationGain = (sumElevationGain).toFixed(0);
+
+  const runLengths = runs.filter((run) => run.type === 'Run').length;
+  const walkLengths = runs.filter((run) => run.type === 'Walk').length;
+
+  const runDistance = runs.filter((run) => run.type === 'Run').reduce((acc, run) => acc + (run.distance / 1000), 0).toFixed(1);
+  const walkDistance = runs.filter((run) => run.type === 'Walk').reduce((acc, run) => acc + (run.distance / 1000), 0).toFixed(1);
   const avgPace = formatPace(totalMetersAvail / totalSecondsAvail);
-  const hasHeartRate = !(heartRate === 0);
-  const avgHeartRate = (heartRate / (runs.length - heartRateNullCount)).toFixed(
+  const avgHeartRate = (heartRate / (runLengths - heartRateNullCount)).toFixed(
     0
   );
+
+
   return (
     <div
       className="cursor-pointer"
@@ -60,16 +66,28 @@ const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) =>
     >
       <section>
         <Stat value={year} description=" Journey" />
-        <Stat value={runs.length} description=" Runs" />
-        <Stat value={sumDistance} description=" KM" />
-        {SHOW_ELEVATION_GAIN && <Stat value={sumElevationGain} description=" Elevation Gain" />}
-        <Stat value={avgPace} description=" Avg Pace" />
+        <div className="flex flex-row gap-4">
+          <Stat value={runs.length} description=" Total" />
+          <Stat value={sumDistance} description=" KM" />
+        </div>
+        <div className="flex flex-row gap-4">
+          <Stat value={runLengths} description=" Runs" />
+          <Stat value={runDistance} description=" KM" />
+        </div>
+        <div className="flex flex-row gap-4">
+          <Stat value={walkLengths} description=" Walks" />
+          <Stat value={walkDistance} description=" KM" />
+        </div>
+
+        <Stat value={avgPace} description=" Run Avg Pace" />
+        <Stat value={sumElevationGain} description=" Elevation Gain" />
+        
         <Stat value={`${streak} day`} description=" Streak" />
-        {hasHeartRate && (
-          <Stat value={avgHeartRate} description=" Avg Heart Rate" />
-        )}
+      
+        <Stat value={avgHeartRate} description=" Run Avg Heart Rate" />
+
       </section>
-      {year !== 'Total' && hovered && (
+      {year !== 'Total' && (
         <Suspense fallback="loading...">
           <YearSVG className="my-4 h-4/6 w-4/6 border-0 p-0" />
         </Suspense>
