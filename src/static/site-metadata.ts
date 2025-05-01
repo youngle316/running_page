@@ -21,6 +21,10 @@ const data: ISiteMetadataResult = {
   description: 'yanglele workout garden',
   navLinks: [
     {
+      name: 'Strava',
+      url: "https://www.strava.com/athletes/134921761",
+    },
+    {
       name: 'Summary',
       url: `${getBasePath()}/summary`,
     },
