@@ -6,7 +6,13 @@ import { formatPace } from '@/utils/utils';
 import { yearStats } from '@assets/index';
 import { lazy, Suspense } from 'react';
 
-const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) => void }) => {
+const YearStat = ({
+  year,
+  onClick,
+}: {
+  year: string;
+  onClick: (_year: string) => void;
+}) => {
   let { activities: runs, years } = useActivities();
   // for hover
   const [hovered, eventHandlers] = useHover();
@@ -25,38 +31,48 @@ const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) =>
   let heartRateNullCount = 0;
   let totalMetersAvail = 0;
   let totalSecondsAvail = 0;
-  runs.filter((run) => run.type === 'Run').forEach((run) => {
+  runs.forEach((run) => {
     sumDistance += run.distance || 0;
-    sumElevationGain += run.elevation_gain || 0;
-    if (run.average_speed) {
-      pace += run.average_speed;
-      totalMetersAvail += run.distance || 0;
-      totalSecondsAvail += (run.distance || 0) / run.average_speed;
-    } else {
-      paceNullCount++;
-    }
-    if (run.average_heartrate) {
-      heartRate += run.average_heartrate;
-    } else {
-      heartRateNullCount++;
-    }
-    if (run.streak) {
-      streak = Math.max(streak, run.streak);
-    }
   });
+  runs
+    .filter((run) => run.type === 'Run')
+    .forEach((run) => {
+      // sumDistance += run.distance || 0;
+      sumElevationGain += run.elevation_gain || 0;
+      if (run.average_speed) {
+        pace += run.average_speed;
+        totalMetersAvail += run.distance || 0;
+        totalSecondsAvail += (run.distance || 0) / run.average_speed;
+      } else {
+        paceNullCount++;
+      }
+      if (run.average_heartrate) {
+        heartRate += run.average_heartrate;
+      } else {
+        heartRateNullCount++;
+      }
+      if (run.streak) {
+        streak = Math.max(streak, run.streak);
+      }
+    });
   sumDistance = parseFloat((sumDistance / 1000.0).toFixed(1));
-  sumElevationGain = (sumElevationGain).toFixed(0);
+  sumElevationGain = sumElevationGain.toFixed(0);
 
   const runLengths = runs.filter((run) => run.type === 'Run').length;
   const walkLengths = runs.filter((run) => run.type === 'Walk').length;
 
-  const runDistance = runs.filter((run) => run.type === 'Run').reduce((acc, run) => acc + (run.distance / 1000), 0).toFixed(1);
-  const walkDistance = runs.filter((run) => run.type === 'Walk').reduce((acc, run) => acc + (run.distance / 1000), 0).toFixed(1);
+  const runDistance = runs
+    .filter((run) => run.type === 'Run')
+    .reduce((acc, run) => acc + run.distance / 1000, 0)
+    .toFixed(1);
+  const walkDistance = runs
+    .filter((run) => run.type === 'Walk')
+    .reduce((acc, run) => acc + run.distance / 1000, 0)
+    .toFixed(1);
   const avgPace = formatPace(totalMetersAvail / totalSecondsAvail);
   const avgHeartRate = (heartRate / (runLengths - heartRateNullCount)).toFixed(
     0
   );
-
 
   return (
     <div
@@ -81,11 +97,10 @@ const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) =>
 
         <Stat value={avgPace} description=" Run Avg Pace" />
         <Stat value={sumElevationGain} description=" Elevation Gain" />
-        
-        <Stat value={`${streak} day`} description=" Streak" />
-      
-        <Stat value={avgHeartRate} description=" Run Avg Heart Rate" />
 
+        <Stat value={`${streak} day`} description=" Streak" />
+
+        <Stat value={avgHeartRate} description=" Run Avg Heart Rate" />
       </section>
       {year !== 'Total' && (
         <Suspense fallback="loading...">
