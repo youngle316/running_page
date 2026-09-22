@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import Stat from '../Stat';
 import useActivities from '../../hooks/useActivities';
 import type { Activity } from '../../utils/utils';
-import { formatPace } from '../../utils/utils';
+import { formatSpeed } from '../../utils/utils';
 import useHover from '@core/hooks/useHover';
 import { yearStats, githubYearStats } from '@assets/index';
 import { loadSvgComponent } from '../../utils/svgUtils';
@@ -30,13 +30,13 @@ interface YearStatAccumulator {
   streak: number;
   totalDistance: number;
   totalElevationGain: number;
-  totalMetersForPace: number;
-  totalSecondsForPace: number;
+  totalMetersForSpeed: number;
+  totalSecondsForSpeed: number;
 }
 
 interface YearStatSummary {
   averageHeartRate: string;
-  averagePace: string;
+  averageSpeed: string;
   hasHeartRate: boolean;
   runCount: number;
   streak: number;
@@ -51,8 +51,8 @@ const createAccumulator = (): YearStatAccumulator => ({
   streak: 0,
   totalDistance: 0,
   totalElevationGain: 0,
-  totalMetersForPace: 0,
-  totalSecondsForPace: 0,
+  totalMetersForSpeed: 0,
+  totalSecondsForSpeed: 0,
 });
 
 const addRunToAccumulator = (
@@ -64,8 +64,8 @@ const addRunToAccumulator = (
   accumulator.totalElevationGain += run.elevation_gain || 0;
 
   if (run.average_speed) {
-    accumulator.totalMetersForPace += run.distance || 0;
-    accumulator.totalSecondsForPace += (run.distance || 0) / run.average_speed;
+    accumulator.totalMetersForSpeed += run.distance || 0;
+    accumulator.totalSecondsForSpeed += (run.distance || 0) / run.average_speed;
   }
 
   if (run.average_heartrate) {
@@ -88,8 +88,8 @@ const finalizeYearStat = (
     averageHeartRate: (
       accumulator.averageHeartRateTotal / heartRateCount
     ).toFixed(0),
-    averagePace: formatPace(
-      accumulator.totalMetersForPace / accumulator.totalSecondsForPace
+    averageSpeed: formatSpeed(
+      accumulator.totalMetersForSpeed / accumulator.totalSecondsForSpeed
     ),
     hasHeartRate: accumulator.averageHeartRateTotal !== 0,
     runCount: accumulator.runCount,
@@ -150,7 +150,7 @@ const YearStat = ({
     <div className="cursor-pointer" onClick={() => onClick(year)}>
       <section {...eventHandlers}>
         <Stat value={year} description=" Journey" />
-        <Stat value={summary.runCount} description=" Runs" />
+        <Stat value={summary.runCount} description=" Rides" />
         <Stat value={summary.totalDistance} description={` ${DIST_UNIT}`} />
         {SHOW_ELEVATION_GAIN && (
           <Stat
@@ -158,7 +158,7 @@ const YearStat = ({
             description=" Elevation Gain"
           />
         )}
-        <Stat value={summary.averagePace} description=" Avg Pace" />
+        <Stat value={summary.averageSpeed} description=" Average Speed" />
         <Stat value={`${summary.streak} day`} description=" Streak" />
         {summary.hasHeartRate && (
           <Stat

@@ -38,24 +38,21 @@ export interface Activity {
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / M_TO_DIST).toFixed(2);
-  let name = 'Run';
+  let name = 'Ride';
   if (run.name.slice(0, 7) === 'Running') {
-    name = 'run';
+    name = 'ride';
   }
   if (run.name) {
     name = run.name;
   }
   return `${name} ${date} ${distance} ${DIST_UNIT} ${
-    !run.summary_polyline ? '(No map data for this run)' : ''
+    !run.summary_polyline ? '(No map data for this ride)' : ''
   }`;
 };
 
-const formatPace = (d: number): string => {
-  if (Number.isNaN(d)) return '0';
-  const pace = (M_TO_DIST / 60.0) * (1.0 / d);
-  const minutes = Math.floor(pace);
-  const seconds = Math.floor((pace - minutes) * 60.0);
-  return `${minutes}'${seconds.toFixed(0).toString().padStart(2, '0')}"`;
+const formatSpeed = (speedMs: number): string => {
+  if (!speedMs || Number.isNaN(speedMs)) return '—';
+  return `${(speedMs * 3.6).toFixed(1)} km/h`;
 };
 
 const convertMovingTime2Sec = (moving_time: string): number => {
@@ -297,7 +294,7 @@ const sortDateFuncReverse = (a: Activity, b: Activity) => sortDateFunc(b, a);
 
 export {
   titleForShow,
-  formatPace,
+  formatSpeed,
   scrollToMap,
   locationForRun,
   intComma,

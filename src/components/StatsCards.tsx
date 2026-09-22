@@ -3,6 +3,7 @@ import type { Activity, SportFilter } from '../types';
 import { formatDistance, parseMovingTime } from '../hooks/useActivities';
 import { useLocale } from '../hooks/useLocale';
 import { GOALS, DEFAULT_GOAL } from '../config';
+import { isCyclingActivity } from '../core/utils/activityType';
 
 interface StatsCardsProps {
   activities: Activity[];
@@ -20,6 +21,8 @@ export const StatsCards = memo(function StatsCards({
   onSelectActivity,
 }: StatsCardsProps) {
   const { t, locale } = useLocale();
+  const matchesFilter = (activity: Activity) =>
+    filter === 'all' || isCyclingActivity(activity);
   const goal = GOALS[filter] ?? DEFAULT_GOAL;
   // For Gym, goals are in minutes; for others, goals are in km → convert to meters
   const yearGoalMeters = goal.unit === 'time' ? 0 : goal.yearly * 1000;
@@ -50,7 +53,7 @@ export const StatsCards = memo(function StatsCards({
   const lastYearActivities = allActivities.filter((a) => {
     const d = new Date(a.start_date_local);
     if (d.getFullYear() !== currentYear - 1) return false;
-    if (filter !== 'all' && a.type !== filter) return false;
+    if (!matchesFilter(a)) return false;
     const aDayOfYear = Math.floor(
       (d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 86400000
     );
@@ -79,7 +82,7 @@ export const StatsCards = memo(function StatsCards({
       d.getMonth() !== now.getMonth()
     )
       return false;
-    if (filter !== 'all' && a.type !== filter) return false;
+    if (!matchesFilter(a)) return false;
     return true;
   });
   const monthDistance = monthActivities.reduce((s, a) => s + a.distance, 0);
@@ -97,7 +100,7 @@ export const StatsCards = memo(function StatsCards({
       now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
     if (d.getFullYear() !== targetYear || d.getMonth() !== targetMonth)
       return false;
-    if (filter !== 'all' && a.type !== filter) return false;
+    if (!matchesFilter(a)) return false;
     return d.getDate() <= now.getDate();
   });
   const lastMonthDistance = lastMonthActivities.reduce(
@@ -121,7 +124,7 @@ export const StatsCards = memo(function StatsCards({
   const weekActivities = allActivities.filter((a) => {
     const d = new Date(a.start_date_local);
     if (d < weekStart) return false;
-    if (filter !== 'all' && a.type !== filter) return false;
+    if (!matchesFilter(a)) return false;
     return true;
   });
   const weekDistance = weekActivities.reduce((s, a) => s + a.distance, 0);
@@ -137,7 +140,7 @@ export const StatsCards = memo(function StatsCards({
   const lastWeekActivities = allActivities.filter((a) => {
     const d = new Date(a.start_date_local);
     if (d < lastWeekStart || d > lastWeekSamePoint) return false;
-    if (filter !== 'all' && a.type !== filter) return false;
+    if (!matchesFilter(a)) return false;
     return true;
   });
   const lastWeekDistance = lastWeekActivities.reduce(
@@ -290,7 +293,7 @@ export const StatsCards = memo(function StatsCards({
     return `${h}h`;
   };
 
-  const unit = filter === 'Run' ? t('runs') : t('activities');
+  const unit = filter === 'Ride' ? t('rides') : t('activities');
 
   const todayIdx = (now.getDay() + 6) % 7; // Mon=0 … Sun=6
   const visualWeekStart = new Date(now.getTime() - todayIdx * 86400000);

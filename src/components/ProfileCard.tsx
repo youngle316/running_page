@@ -7,6 +7,7 @@ import {
   extractProvince,
 } from '../hooks/useActivities';
 import { AVATAR } from '../config';
+import { isCyclingActivity } from '../core/utils/activityType';
 
 interface ProfileCardProps {
   activities: Activity[];
@@ -21,7 +22,7 @@ export const ProfileCard = memo(function ProfileCard({
 
   // Filter activities by sport type for distance/count/time
   const filteredActivities =
-    filter === 'all' ? activities : activities.filter((a) => a.type === filter);
+    filter === 'Ride' ? activities.filter(isCyclingActivity) : activities;
 
   const totalDistance = filteredActivities.reduce((s, a) => s + a.distance, 0);
   const totalCount = filteredActivities.length;

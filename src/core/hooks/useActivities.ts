@@ -106,8 +106,8 @@ export function useFilteredActivities(
 ) {
   return useMemo(() => {
     let filtered = activities;
-    if (filter !== 'all') {
-      filtered = filtered.filter((a) => a.type === filter);
+    if (filter === 'Ride') {
+      filtered = filtered.filter(isCyclingActivity);
     }
     if (year) {
       filtered = filtered.filter((a) => {
@@ -182,6 +182,11 @@ export function parseMovingTime(
 
 export function formatDistance(meters: number): string {
   return Math.round(meters / 1000).toString();
+}
+
+export function formatSpeed(speedMs: number): string {
+  if (!speedMs) return '--';
+  return `${(speedMs * 3.6).toFixed(1)} km/h`;
 }
 
 export function formatPace(speedMs: number): string {

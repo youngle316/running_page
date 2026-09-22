@@ -186,7 +186,7 @@ const Index = () => {
       }
       setCurrentFilter({ item, func });
       setRunIndex(-1);
-      setTitle(`${item} ${name} Running Heatmap`);
+      setTitle(`${item} ${name} Riding Heatmap`);
       // Reset single run state when changing filters
       clearRunHash();
     },

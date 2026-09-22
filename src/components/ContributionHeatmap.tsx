@@ -5,9 +5,10 @@ import {
   getAvailableYears,
   formatDistance,
   parseMovingTime,
-  formatPace,
+  formatSpeed,
 } from '../hooks/useActivities';
 import { useLocale } from '../hooks/useLocale';
+import { isCyclingActivity } from '../core/utils/activityType';
 
 const MAX_VISIBLE_YEARS = 10;
 const weekdayIds = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -20,10 +21,12 @@ interface HeatmapProps {
 }
 
 // Map any activity type to the 4 display categories
-function toDisplayType(type: string): 'Run' | 'Ride' | 'Hike' | 'Training' {
-  if (type === 'Run') return 'Run';
-  if (type === 'Ride') return 'Ride';
-  if (type === 'Hike') return 'Hike';
+function toDisplayType(
+  activity: Activity
+): 'Run' | 'Ride' | 'Hike' | 'Training' {
+  if (activity.type === 'Run') return 'Run';
+  if (isCyclingActivity(activity)) return 'Ride';
+  if (activity.type === 'Hike') return 'Hike';
   return 'Training';
 }
 
@@ -77,7 +80,7 @@ function dominantDisplayType(
 ): 'Run' | 'Ride' | 'Hike' | 'Training' {
   if (acts.length === 0) return 'Training';
   const sorted = [...acts].sort((a, b) => b.distance - a.distance);
-  return toDisplayType(sorted[0].type);
+  return toDisplayType(sorted[0]);
 }
 
 function buildYearGrid(
@@ -95,12 +98,17 @@ function buildYearGrid(
     (s, a) => s + parseMovingTime(a.moving_time),
     0
   );
-  const runs = yearActivities.filter((a) => a.type === 'Run');
-  // Average pace as distance-weighted mean speed (totalDistance / totalTime),
-  // not an arithmetic mean of per-run speeds. M5 fix.
-  const runDistance = runs.reduce((s, a) => s + a.distance, 0);
-  const runTime = runs.reduce((s, a) => s + parseMovingTime(a.moving_time), 0);
-  const avgPace = runTime > 0 && runDistance > 0 ? runDistance / runTime : 0;
+  const rides = yearActivities.filter(isCyclingActivity);
+  const rideDistance = rides.reduce(
+    (sum, activity) => sum + activity.distance,
+    0
+  );
+  const rideTime = rides.reduce(
+    (sum, activity) => sum + parseMovingTime(activity.moving_time),
+    0
+  );
+  const averageSpeed =
+    rideTime > 0 && rideDistance > 0 ? rideDistance / rideTime : 0;
 
   // Per-day totals
   const dayMap = new Map<string, number>();
@@ -194,7 +202,7 @@ function buildYearGrid(
       count: yearActivities.length,
       distance: totalDist,
       time: totalTime,
-      pace: avgPace,
+      speed: averageSpeed,
     },
   };
 }
@@ -266,9 +274,9 @@ export const ContributionHeatmap = memo(function ContributionHeatmap({
             yearToCheck === null ||
             new Date(a.start_date_local).getFullYear() === yearToCheck
         )
-        .map((a) => toDisplayType(a.type))
+        .map(toDisplayType)
     );
-    return (['Run', 'Training'] as const).filter((t) => types.has(t));
+    return (['Ride'] as const).filter((type) => types.has(type));
   }, [activities, selectedYear, isAll]);
 
   // Gym: monthly session breakdown
@@ -292,10 +300,10 @@ export const ContributionHeatmap = memo(function ContributionHeatmap({
   };
 
   const heatmapTitle =
-    filter === 'Run'
+    filter === 'Ride'
       ? locale === 'zh'
-        ? '跑步热力图'
-        : 'Run Heatmap'
+        ? '骑行热力图'
+        : 'Ride Heatmap'
       : t('heatmapTitle');
 
   const handleSelectYear = (yr: number | 'all') => {
@@ -822,7 +830,7 @@ export const ContributionHeatmap = memo(function ContributionHeatmap({
                   {formatDistance(yearData[0].stats.distance)} km
                 </span>
               )}
-              {filter === 'Run' && yearData[0].stats.pace > 0 && (
+              {filter === 'Ride' && yearData[0].stats.speed > 0 && (
                 <span className="flex items-center gap-1 font-mono">
                   <svg
                     className="h-3.5 w-3.5"
@@ -837,7 +845,7 @@ export const ContributionHeatmap = memo(function ContributionHeatmap({
                       d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
                     />
                   </svg>
-                  {formatPace(yearData[0].stats.pace)}
+                  {formatSpeed(yearData[0].stats.speed)}
                 </span>
               )}
             </div>

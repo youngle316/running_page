@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Activity, SportFilter } from '../types';
-import { formatDuration, formatPace } from '../hooks/useActivities';
+import { formatDuration, formatSpeed } from '../hooks/useActivities';
 import { useLocale } from '../hooks/useLocale';
 
 interface ActivityLogProps {
@@ -19,9 +19,9 @@ type DistanceFilter = 'all' | '10' | '20' | '40';
 
 function typeIcon(type: string): string {
   const icons: Record<string, string> = {
-    Run: '🏃',
+    Ride: '🚴',
   };
-  return icons[type] ?? '📌';
+  return icons[type] ?? '🚴';
 }
 
 export function ActivityLog({
@@ -158,7 +158,7 @@ export function ActivityLog({
       <p className="table-scroll-hint mb-2 text-xs text-[var(--color-muted)]">
         {locale === 'zh'
           ? '左右滑动查看更多数据，点击记录查看路线'
-          : 'Swipe for more details; select a run to view its route'}
+          : 'Swipe for more details; select a ride to view its route'}
       </p>
       {/* Table */}
       <div className="overflow-x-auto">
@@ -170,7 +170,7 @@ export function ActivityLog({
               <th className="pb-3 font-medium">{t('name')}</th>
               <th className="pb-3 font-medium">{t('distance')}</th>
               <th className="pb-3 font-medium">{t('duration')}</th>
-              <th className="pb-3 font-medium">{t('pace')}</th>
+              <th className="pb-3 font-medium">{t('averageSpeed')}</th>
               <th className="pb-3 font-medium">{t('hr')}</th>
             </tr>
           </thead>
@@ -216,10 +216,10 @@ export function ActivityLog({
                 </td>
                 <td className="py-3">
                   <span className="text-[var(--color-muted)]">
-                    {typeIcon(a.type)} {a.type}
+                    {typeIcon(a.type)} {t('ride')}
                   </span>
                 </td>
-                <td className="py-3">{a.name || t('run')}</td>
+                <td className="py-3">{a.name || t('ride')}</td>
                 <td className="py-3 font-mono font-medium">
                   {(a.distance / 1000).toFixed(1)}
                   <span className="ml-1 text-xs font-normal text-[var(--color-muted)]">
@@ -230,7 +230,7 @@ export function ActivityLog({
                   {formatDuration(a.moving_time)}
                 </td>
                 <td className="py-3 text-[var(--color-muted)]">
-                  {formatPace(a.average_speed)}
+                  {formatSpeed(a.average_speed)}
                 </td>
                 <td className="py-3 text-[var(--color-muted)]">
                   {a.average_heartrate ? Math.round(a.average_heartrate) : '--'}
