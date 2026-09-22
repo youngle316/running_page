@@ -10,7 +10,6 @@ import {
 } from 'recharts';
 import type { Activity } from '../types';
 import { useLocale } from '../hooks/useLocale';
-import { formatPace } from '../hooks/useActivities';
 import {
   groupSummary,
   summaryKey,
@@ -25,6 +24,7 @@ const panel =
   'rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 sm:p-6';
 const number = (value: number) =>
   value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+const speedKmh = (speedMs: number) => `${number(speedMs * 3.6)} km/h`;
 
 function SummaryCard({
   activities,
@@ -48,8 +48,8 @@ function SummaryCard({
       `${Math.floor(stats.seconds / 3600)}h ${Math.floor((stats.seconds % 3600) / 60)}m`,
     ],
     [
-      zh ? '平均配速' : 'Average pace',
-      stats.speed > 0 ? `${formatPace(stats.speed)} /km` : '—',
+      zh ? '平均速度' : 'Average speed',
+      stats.speed > 0 ? speedKmh(stats.speed) : '—',
     ],
     [
       zh ? '平均心率' : 'Average heart rate',
@@ -60,8 +60,8 @@ function SummaryCard({
       `${number(stats.maxDistance / 1000)} km`,
     ],
     [
-      zh ? '最快配速' : 'Fastest pace',
-      stats.maxSpeed > 0 ? `${formatPace(stats.maxSpeed)} /km` : '—',
+      zh ? '最快速度' : 'Fastest speed',
+      stats.maxSpeed > 0 ? speedKmh(stats.maxSpeed) : '—',
     ],
     [
       zh ? '平均距离' : 'Average distance',
@@ -197,13 +197,8 @@ export function SummaryPage({
   const { locale, t } = useLocale();
   const zh = locale === 'zh';
   const [period, setPeriod] = useState<SummaryPeriod>('month');
-  const [sport, setSport] = useState('all');
   const [year, setYear] = useState('all');
   const [limit, setLimit] = useState(12);
-  const sports = useMemo(
-    () => [...new Set(activities.map((a) => a.type))].sort(),
-    [activities]
-  );
   const years = useMemo(
     () =>
       [...new Set(activities.map((a) => a.start_date_local.slice(0, 4)))]
@@ -215,13 +210,11 @@ export function SummaryPage({
     () =>
       groupSummary(
         activities.filter(
-          (a) =>
-            (sport === 'all' || a.type === sport) &&
-            (year === 'all' || summaryKeyYear(a, period) === year)
+          (a) => year === 'all' || summaryKeyYear(a, period) === year
         ),
         period
       ),
-    [activities, sport, year, period]
+    [activities, year, period]
   );
   const periods: [SummaryPeriod, string][] = [
     ['year', zh ? '年' : 'Year'],
@@ -242,25 +235,6 @@ export function SummaryPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <label className="text-xs text-[var(--color-muted)]">
-            {zh ? '运动类型' : 'Sport'}
-            <select
-              aria-label={zh ? '运动类型' : 'Sport'}
-              className={`${control} ml-2`}
-              value={sport}
-              onChange={(e) => {
-                setSport(e.target.value);
-                setLimit(12);
-              }}
-            >
-              <option value="all">{zh ? '全部运动' : 'All sports'}</option>
-              {sports.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
           <label className="text-xs text-[var(--color-muted)]">
             {zh ? '年份' : 'Year'}
             <select

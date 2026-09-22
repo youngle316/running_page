@@ -75,6 +75,7 @@ class Activity(Base):
             else:
                 out[key] = attr
 
+        out["sport_type"] = self.subtype or self.type
         if self.streak:
             out["streak"] = self.streak
 

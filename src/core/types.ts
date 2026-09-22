@@ -4,6 +4,7 @@ export interface Activity {
   distance: number; // meters
   moving_time: string; // "H:MM:SS"
   type: 'Run' | string;
+  sport_type?: string;
   subtype?: string;
   start_date: string;
   start_date_local: string;

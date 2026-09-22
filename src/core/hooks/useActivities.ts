@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Activity, SportFilter } from '../types';
+import { isCyclingActivity } from '../utils/activityType';
 
 // Canonical province extraction — handles all 3 location_country formats,
 // only returns Chinese provinces (filters out foreign locations).
@@ -221,8 +222,9 @@ const loadActivityData = () => {
       return response.json() as Promise<Activity[]>;
     })
     .then((data) => {
-      activityDataCache = data;
-      return data;
+      const cyclingActivities = data.filter(isCyclingActivity);
+      activityDataCache = cyclingActivities;
+      return cyclingActivities;
     })
     .catch((error: unknown) => {
       activityDataError = error;

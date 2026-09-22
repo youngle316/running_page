@@ -11,6 +11,8 @@ from polyline_processor import filter_out
 from sqlalchemy import func
 from synced_data_file_logger import save_synced_data_file_list
 
+from activity_filter import activity_matches_types, normalize_activity_types
+
 from .db import Activity, init_db, update_or_create_activity
 
 IGNORE_BEFORE_SAVING = os.getenv(
@@ -131,7 +133,15 @@ class Generator:
         self.client_id = ""
         self.client_secret = ""
         self.refresh_token = ""
-        self.only_run = False
+        self.activity_types = set()
+
+    @property
+    def only_run(self):
+        return self.activity_types == {"running"}
+
+    @only_run.setter
+    def only_run(self, enabled):
+        self.activity_types = {"running"} if enabled else set()
 
     def set_strava_config(self, client_id, client_secret, refresh_token):
         self.client_id = client_id
@@ -151,6 +161,31 @@ class Generator:
         self.client.access_token = response["access_token"]
         print("Access ok")
 
+    def _latest_activity_date(self):
+        query = self.session.query(Activity.start_date).filter(
+            Activity.start_date.isnot(None), Activity.start_date != ""
+        )
+        if self.activity_types:
+            accepted = normalize_activity_types(self.activity_types)
+
+            def normalized_column(column):
+                value = func.lower(func.coalesce(column, ""))
+                for character in (" ", "_", "-"):
+                    value = func.replace(value, character, "")
+                return value
+
+            authoritative_type = func.coalesce(
+                func.nullif(Activity.subtype, ""), Activity.type
+            )
+            query = query.filter(normalized_column(authoritative_type).in_(accepted))
+
+        for (value,) in query.order_by(Activity.start_date.desc()).yield_per(100):
+            try:
+                return arrow.get(value)
+            except (TypeError, ValueError, arrow.parser.ParserError):
+                continue
+        return None
+
     def sync(self, force):
         """
         Sync activities means sync from strava
@@ -162,16 +197,15 @@ class Generator:
         if force:
             filters = {"before": datetime.datetime.now(datetime.UTC)}
         else:
-            last_activity = self.session.query(func.max(Activity.start_date)).scalar()
-            if last_activity:
-                last_activity_date = arrow.get(last_activity)
+            last_activity_date = self._latest_activity_date()
+            if last_activity_date:
                 last_activity_date = last_activity_date.shift(days=-7)
                 filters = {"after": last_activity_date.datetime}
             else:
                 filters = {"before": datetime.datetime.now(datetime.UTC)}
 
         for activity in self.client.get_activities(**filters):
-            if self.only_run and activity.type != "Run":
+            if not activity_matches_types(activity, self.activity_types):
                 continue
             if IGNORE_BEFORE_SAVING and activity.map and activity.map.summary_polyline:
                 activity.map.summary_polyline = filter_out(
@@ -179,7 +213,7 @@ class Generator:
                 )
             #  strava use total_elevation_gain as elevation_gain
             activity.elevation_gain = activity.total_elevation_gain
-            activity.subtype = activity.type
+            activity.subtype = getattr(activity, "sport_type", None) or activity.type
             created = update_or_create_activity(self.session, activity)
             if created:
                 sys.stdout.write("+")
@@ -236,30 +270,32 @@ class Generator:
     def load(self):
         # if sub_type is not in the db, just add an empty string to it
         query = self.session.query(Activity).filter(Activity.distance > 0.1)
-        if self.only_run:
-            query = query.filter(Activity.type == "Run")
-
         activities = query.order_by(Activity.start_date_local)
         activity_list = []
 
         streak = 0
         last_date = None
         for activity in activities:
-            # Determine running streak.
-            date = datetime.datetime.strptime(  # noqa: DTZ007
-                activity.start_date_local, "%Y-%m-%d %H:%M:%S"  # type: ignore
-            ).date()
-            if last_date is None:
-                streak = 1
-            elif date == last_date:
-                pass
-            elif date == last_date + datetime.timedelta(days=1):
-                streak += 1
-            else:
-                assert date > last_date
-                streak = 1
-            activity.streak = streak  # type: ignore
-            last_date = date
+            if not activity_matches_types(activity, self.activity_types):
+                continue
+            # Determine activity streak without failing exports on legacy bad dates.
+            try:
+                date = datetime.datetime.strptime(  # noqa: DTZ007
+                    activity.start_date_local, "%Y-%m-%d %H:%M:%S"  # type: ignore
+                ).date()
+            except (TypeError, ValueError):
+                date = None
+            if date is not None:
+                if last_date is None:
+                    streak = 1
+                elif date == last_date:
+                    pass
+                elif date == last_date + datetime.timedelta(days=1):
+                    streak += 1
+                else:
+                    streak = 1
+                activity.streak = streak  # type: ignore
+                last_date = date
             if not IGNORE_BEFORE_SAVING:
                 activity.summary_polyline = filter_out(activity.summary_polyline)  # type: ignore
             activity_list.append(activity.to_dict())

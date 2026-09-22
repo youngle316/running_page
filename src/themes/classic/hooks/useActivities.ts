@@ -3,6 +3,7 @@ import type { Activity } from '../utils/utils';
 import { locationForRun, titleForRun } from '../utils/utils';
 import activitiesUrl from '@/static/activities.json?url';
 import { COUNTRY_STANDARDIZATION } from '../static/city';
+import { isCyclingActivity } from '@/core/utils/activityType';
 
 interface ProcessedActivities {
   activities: Activity[];
@@ -36,8 +37,9 @@ const loadActivityData = () => {
       return response.json() as Promise<Activity[]>;
     })
     .then((activityData) => {
-      activityDataCache = activityData;
-      return activityData;
+      const cyclingActivities = activityData.filter(isCyclingActivity);
+      activityDataCache = cyclingActivities;
+      return cyclingActivities;
     })
     .catch((error: unknown) => {
       activityDataError = error;

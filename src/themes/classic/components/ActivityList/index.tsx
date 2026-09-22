@@ -18,6 +18,7 @@ import { SHOW_ELEVATION_GAIN, HOME_PAGE_TITLE } from '../../utils/const';
 import { DIST_UNIT, M_TO_DIST } from '../../utils/utils';
 import type { Activity } from '../../utils/utils';
 import useActivities from '../../hooks/useActivities';
+import { isCyclingActivity } from '@/core/utils/activityType';
 // Layout constants (avoid magic numbers)
 const ITEM_WIDTH = 280;
 const ITEM_GAP = 20;
@@ -76,12 +77,6 @@ const MonthOfLifeSvg = (sportType: string) => {
   return lazy(() => loadSvgComponent(totalStat, path));
 };
 
-const RunningSvg = MonthOfLifeSvg('running');
-const WalkingSvg = MonthOfLifeSvg('walking');
-const HikingSvg = MonthOfLifeSvg('hiking');
-const CyclingSvg = MonthOfLifeSvg('cycling');
-const SwimmingSvg = MonthOfLifeSvg('swimming');
-const SkiingSvg = MonthOfLifeSvg('skiing');
 const AllSvg = MonthOfLifeSvg('all');
 
 const yearSummarySvgs = Object.fromEntries(
@@ -143,7 +138,6 @@ interface ActivityListCache {
   activityGroups: Map<string, ActivityGroups>;
   availableYears?: string[];
   periodSummaries: Map<string, RowGroup>;
-  sportTypeOptions?: string[];
 }
 
 const activityListCache = new WeakMap<Activity[], ActivityListCache>();
@@ -158,27 +152,6 @@ const getActivityListCache = (activityData: Activity[]) => {
     activityListCache.set(activityData, cache);
   }
   return cache;
-};
-
-const getSportTypeOptions = (activityData: Activity[]) => {
-  const cache = getActivityListCache(activityData);
-  if (cache.sportTypeOptions) return cache.sportTypeOptions;
-
-  const sportTypeSet = new Set(activityData.map((activity) => activity.type));
-  if (sportTypeSet.has('Run')) {
-    sportTypeSet.delete('Run');
-    sportTypeSet.add('running');
-  }
-  if (sportTypeSet.has('Walk')) {
-    sportTypeSet.delete('Walk');
-    sportTypeSet.add('walking');
-  }
-  if (sportTypeSet.has('Ride')) {
-    sportTypeSet.delete('Ride');
-    sportTypeSet.add('cycling');
-  }
-  cache.sportTypeOptions = ['all', ...sportTypeSet];
-  return cache.sportTypeOptions;
 };
 
 const getAvailableActivityYears = (activityData: Activity[]) => {
@@ -207,14 +180,8 @@ const formatTime = (seconds: number): string => {
   return `${h}h ${m}m ${s}s`;
 };
 
-const formatPace = (speed: number): string => {
-  if (speed === 0) return `0:00 min/${DIST_UNIT}`;
-  const pace = 60 / speed;
-  const totalSeconds = Math.round(pace * 60);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds} min/${DIST_UNIT}`;
-};
+const formatSpeed = (speed: number): string =>
+  `${speed.toFixed(2)} ${DIST_UNIT}/h`;
 
 const generateLabels = (interval: string, period: string): number[] => {
   if (interval === 'month') {
@@ -241,9 +208,7 @@ const matchesSportType = (activity: Activity, sportTypeArg: string) => {
   if (sportTypeArg === 'walking') {
     return activity.type === 'walking' || activity.type === 'Walk';
   }
-  if (sportTypeArg === 'cycling') {
-    return activity.type === 'cycling' || activity.type === 'Ride';
-  }
+  if (sportTypeArg === 'cycling') return isCyclingActivity(activity);
   return activity.type === sportTypeArg;
 };
 
@@ -663,7 +628,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
               )}
             <p>
               <strong>{ACTIVITY_TOTAL.AVERAGE_SPEED_TITLE}:</strong>{' '}
-              {formatPace(summary.averageSpeed)}
+              {formatSpeed(summary.averageSpeed)}
             </p>
             <p>
               <strong>{ACTIVITY_TOTAL.TOTAL_TIME_TITLE}:</strong>{' '}
@@ -687,7 +652,7 @@ const ActivityCardInner: React.FC<ActivityCardProps> = ({
                 </p>
                 <p>
                   <strong>{ACTIVITY_TOTAL.MAX_SPEED_TITLE}:</strong>{' '}
-                  {formatPace(summary.maxSpeed)}
+                  {formatSpeed(summary.maxSpeed)}
                 </p>
                 <p>
                   <strong>{ACTIVITY_TOTAL.AVERAGE_DISTANCE_TITLE}:</strong>{' '}
@@ -763,18 +728,13 @@ const ActivityCard = React.memo(ActivityCardInner, activityCardAreEqual);
 const ActivityList: React.FC = () => {
   const { activities: activityData } = useActivities();
   const [interval, setInterval] = useState<IntervalType>('month');
-  const [sportType, setSportType] = useState<string>('all');
+  const sportType = 'all';
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
   const availableYears = useMemo(
     () => getAvailableActivityYears(activityData),
     [activityData]
   );
-  const sportTypeOptions = useMemo(
-    () => getSportTypeOptions(activityData),
-    [activityData]
-  );
-
   // Keyboard navigation for year selection in Life view
   useEffect(() => {
     if (interval !== 'life') return;
@@ -828,9 +788,6 @@ const ActivityList: React.FC = () => {
   };
 
   function toggleInterval(newInterval: IntervalType): void {
-    if (newInterval === 'life' && sportType !== 'all') {
-      setSportType('all');
-    }
     if (newInterval === 'day') {
       void loadRoutePreview();
     }
@@ -910,20 +867,6 @@ const ActivityList: React.FC = () => {
           {HOME_PAGE_TITLE}
         </button>
         <select
-          onChange={(e) => setSportType(e.target.value)}
-          value={sportType}
-        >
-          {sportTypeOptions.map((type) => (
-            <option
-              key={type}
-              value={type}
-              disabled={interval === 'life' && type !== 'all'}
-            >
-              {type}
-            </option>
-          ))}
-        </select>
-        <select
           onChange={(e) => toggleInterval(e.target.value as IntervalType)}
           value={interval}
         >
@@ -957,17 +900,7 @@ const ActivityList: React.FC = () => {
               <SelectedYearSvg className={styles.yearSummarySvg} />
             ) : (
               // Show Life SVG when no year is selected
-              <>
-                {(sportType === 'running' || sportType === 'Run') && (
-                  <RunningSvg />
-                )}
-                {sportType === 'walking' && <WalkingSvg />}
-                {sportType === 'hiking' && <HikingSvg />}
-                {sportType === 'cycling' && <CyclingSvg />}
-                {sportType === 'swimming' && <SwimmingSvg />}
-                {sportType === 'skiing' && <SkiingSvg />}
-                {sportType === 'all' && <AllSvg />}
-              </>
+              <AllSvg />
             )}
           </Suspense>
         </div>

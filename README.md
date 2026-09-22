@@ -200,11 +200,8 @@ Open your browser and visit <http://localhost:5173/>
 > For when your Strava API application is `inactive` (all OAuth2 requests return 403), you can sync activities through Strava's web endpoints instead.
 
 ```bash
-# Sync locally (last 7 days by default)
+# Sync cycling activities locally (last 7 days by default)
 python run_page/strava_web_sync.py <JWT> --days 7
-
-# Runs only
-python run_page/strava_web_sync.py <JWT> --days 7 --only-run
 ```
 
 **Getting the JWT:**
@@ -754,10 +751,9 @@ python run_page/nike_sync.py eyJhbGciThiMTItNGIw******
 
    ![get_refresh_token](https://raw.githubusercontent.com/shaonianche/gallery/master/running_page/get_refresh_token.png)
 
-7. Sync `Strava` data
+7. Sync `Strava` cycling data
 
-   > The first time you synchronize Strava data you need to change line 12 of the code False to True in strava_sync.py, and then change it to False after it finishes running.
-   > If you only want to sync `type running` add args --only-run
+   This fork always filters both the API import and database export to cycling. It includes Strava `Ride` plus virtual, gravel, mountain-bike, and e-bike rides, so historical non-cycling rows cannot return to `activities.json`.
 
    ```bash
    python run_page/strava_sync.py ${client_id} ${client_secret} ${refresh_token}

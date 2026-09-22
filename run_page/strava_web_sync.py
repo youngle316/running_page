@@ -11,7 +11,7 @@ Endpoints used (both verified working with a JWT session cookie):
     GET /activities/{id}/streams              -> per-activity streams (latlng, heartrate, ...)
 
 Usage:
-    python run_page/strava_web_sync.py <jwt> [--days 60] [--only-run]
+    python run_page/strava_web_sync.py <jwt> [--days 60]
     # jwt = value of the strava_remember_token cookie (from the browser)
 """
 
@@ -19,14 +19,17 @@ import argparse
 import datetime
 import json
 import logging
+import os
 import sys
 import time
 import uuid
 
 import pytz
 import requests
+from activity_filter import activity_matches_types
 from config import BASE_TIMEZONE, JSON_FILE, SQL_FILE, run_map, start_point
 from generator.db import init_db, update_or_create_activity
+from strava_sync import CYCLING_ACTIVITY_TYPES
 from stravaweblib import WebClient
 
 logger = logging.getLogger(__name__)
@@ -161,7 +164,8 @@ def _fetch_streams(client, aid):
     return resp.json()
 
 
-def run_strava_web_sync(jwt, days=7, only_run=False):
+def run_strava_web_sync(jwt, days=7):
+    selected_types = CYCLING_ACTIVITY_TYPES
     client = WebClient(jwt=jwt)
     print("Web login ok")
 
@@ -183,7 +187,7 @@ def run_strava_web_sync(jwt, days=7, only_run=False):
             if ts and ts < cutoff:
                 # List is newest-first, so once we pass the cutoff the rest are older.
                 return _finalize(session, total_fetched)
-            if only_run and raw.get("sport_type") != "Run":
+            if not activity_matches_types(WebActivity(raw), selected_types):
                 continue
             _sync_one(client, session, raw)
             total_fetched += 1
@@ -215,6 +219,7 @@ def _finalize(session, count):
     from generator import Generator
 
     gen = Generator(SQL_FILE)
+    gen.activity_types = CYCLING_ACTIVITY_TYPES
     # running_page's Generator exposes load() (with indoor-fix logic) instead of
     # loadForMapping(); both return the list of activity dicts to write to JSON.
     activities_list = gen.load()
@@ -228,15 +233,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Sync Strava activities via web endpoints (JWT session)."
     )
-    parser.add_argument("jwt", help="Strava strava_remember_token JWT cookie value")
+    parser.add_argument(
+        "jwt",
+        nargs="?",
+        help="Strava strava_remember_token JWT cookie value (or STRAVA_JWT)",
+    )
     parser.add_argument(
         "--days", type=int, default=7, help="number of days to look back (default: 7)"
     )
-    parser.add_argument(
-        "--only-run",
-        dest="only_run",
-        action="store_true",
-        help="only sync Run activities",
-    )
     options = parser.parse_args()
-    run_strava_web_sync(options.jwt, days=options.days, only_run=options.only_run)
+    jwt = options.jwt or os.getenv("STRAVA_JWT")
+    if not jwt:
+        parser.error("missing JWT (pass it positionally or set STRAVA_JWT)")
+    run_strava_web_sync(jwt, days=options.days)

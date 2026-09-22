@@ -210,11 +210,8 @@ pnpm develop
 > 当 Strava API 应用处于 `inactive` 状态（OAuth2 请求全部返回 403）时，可以用网页端接口同步数据。
 
 ```bash
-# 本地同步（拉最近 7 天）
+# 本地只同步骑行（拉最近 7 天）
 python run_page/strava_web_sync.py <JWT> --days 7
-
-# 只同步跑步
-python run_page/strava_web_sync.py <JWT> --days 7 --only-run
 ```
 
 **JWT 获取方式**：
@@ -872,12 +869,10 @@ python run_page/nike_sync.py eyJhbGciThiMTItNGIw******
 
    ![get_refresh_token](https://raw.githubusercontent.com/shaonianche/gallery/master/running_page/get_refresh_token.png)
 
-6. 同步数据至 Strava
+6. 同步 Strava 骑行数据
    在项目根目录执行：
 
-   > 第一次同步 Strava 数据时需要更改在 strava_sync.py 中的第 12 行代码 False 改为 True，运行完成后，再改为 False。
-
-   仅同步跑步数据，添加参数 --only-run
+   此 fork 会固定在 API 入库和数据库导出两层过滤骑行。支持 Strava `Ride`、虚拟骑行、砾石骑行、山地骑行和电助力骑行等类型，数据库中的历史非骑行记录不会重新进入 `activities.json`。
 
    ```bash
    python run_page/strava_sync.py ${client_id} ${client_secret} ${refresh_token}

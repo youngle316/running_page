@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 
+from activity_filter import activity_matches_types
 from config import SQL_FILE
 from gpxtrackposter import (
     circular_drawer,
@@ -19,6 +20,12 @@ from gpxtrackposter.exceptions import ParameterError, PosterError
 # from flopp great repo
 __app_name__ = "create_poster"
 __app_author__ = "flopp.net"
+
+
+def filter_tracks_by_sport(tracks, sport_type="cycling"):
+    if sport_type != "cycling":
+        raise ParameterError("this fork only supports cycling posters")
+    return [track for track in tracks if activity_matches_types(track, {"cycling"})]
 
 
 def main():
@@ -198,8 +205,9 @@ def main():
         dest="sport_type",
         metavar="SPORT_TYPE",
         type=str,
-        default="all",
-        help="Sport type",
+        choices=("cycling",),
+        default="cycling",
+        help="Sport type (this fork only supports cycling)",
     )
 
     args_parser.add_argument(
@@ -239,8 +247,7 @@ def main():
     else:
         tracks = loader.load_tracks(args.gpx_dir)
 
-    if args.sport_type != "all":
-        tracks = [track for track in tracks if track.type == args.sport_type]
+    tracks = filter_tracks_by_sport(tracks, args.sport_type)
 
     if not tracks:
         return

@@ -1,28 +1,18 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 
 from config import JSON_FILE, SQL_FILE
 from generator import Generator
 
+CYCLING_ACTIVITY_TYPES = {"cycling"}
 
-# for only run type, we use the same logic as garmin_sync
-def run_strava_sync(
-    client_id,
-    client_secret,
-    refresh_token,
-    sync_types: list | None = None,
-    only_run=False,
-):
-    if sync_types is None:
-        sync_types = []
+
+def run_strava_sync(client_id, client_secret, refresh_token):
     generator = Generator(SQL_FILE)
     generator.set_strava_config(client_id, client_secret, refresh_token)
-    # judge sync types is only running or not
-    if not only_run and len(sync_types) == 1 and sync_types[0] == "running":
-        only_run = True
-    # if you want to refresh data change False to True
-    generator.only_run = only_run
+    generator.activity_types = CYCLING_ACTIVITY_TYPES
     generator.sync(False)
 
     activities_list = generator.load()
@@ -30,21 +20,36 @@ def run_strava_sync(
         json.dump(activities_list, f)
 
 
-if __name__ == "__main__":
+def parse_args(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("client_id", help="strava client id")
-    parser.add_argument("client_secret", help="strava client secret")
-    parser.add_argument("refresh_token", help="strava refresh token")
-    parser.add_argument(
-        "--only-run",
-        dest="only_run",
-        action="store_true",
-        help="if is only for running",
+    parser.add_argument("client_id", nargs="?", help="strava client id")
+    parser.add_argument("client_secret", nargs="?", help="strava client secret")
+    parser.add_argument("refresh_token", nargs="?", help="strava refresh token")
+    options = parser.parse_args(argv)
+
+    options.client_id = options.client_id or os.getenv("STRAVA_CLIENT_ID")
+    options.client_secret = options.client_secret or os.getenv("STRAVA_CLIENT_SECRET")
+    options.refresh_token = options.refresh_token or os.getenv(
+        "STRAVA_CLIENT_REFRESH_TOKEN"
     )
-    options = parser.parse_args()
+    missing = [
+        name
+        for name in ("client_id", "client_secret", "refresh_token")
+        if not getattr(options, name)
+    ]
+    if missing:
+        parser.error(
+            "missing Strava credentials: "
+            + ", ".join(missing)
+            + " (pass positional arguments or set STRAVA_* environment variables)"
+        )
+    return options
+
+
+if __name__ == "__main__":
+    options = parse_args()
     run_strava_sync(
         options.client_id,
         options.client_secret,
         options.refresh_token,
-        only_run=options.only_run,
     )

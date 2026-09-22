@@ -145,8 +145,8 @@ class YearSummaryDrawer(TracksDrawer):
         # Stats with separate value and unit for better layout
         stat_items = [
             ("Distance", f"{int(stats['total_distance'])}", self.poster.u()),
-            ("Runs", f"{stats['total_runs']}", ""),
-            ("Avg Pace", stats["avg_pace"], ""),
+            ("Rides", f"{stats['total_runs']}", ""),
+            ("Avg Speed", stats["avg_speed"], f"{self.poster.u()}/h"),
             ("Streak", f"{stats['streak']}", "d"),
             ("Time", f"{total_hours}", "h"),
             ("Longest", f"{stats['longest_run']:.1f}", ""),
@@ -250,7 +250,7 @@ class YearSummaryDrawer(TracksDrawer):
             "marathon_count": 0,
             "half_marathon_count": 0,
             "10k_count": 0,
-            "avg_pace": "0'00\"",
+            "avg_speed": "0.0",
             "streak": 0,
             "total_time": 0,
             "longest_run": 0,
@@ -293,12 +293,10 @@ class YearSummaryDrawer(TracksDrawer):
         stats["total_time"] = total_time_s
         stats["longest_run"] = self.poster.m2u(longest_run_m)
 
-        # Calculate average pace (min per Unit)
+        # Calculate average speed in the configured distance unit per hour.
         if total_distance_m > 0 and total_time_s > 0:
-            pace_s_per_unit = total_time_s / self.poster.m2u(total_distance_m)
-            pace_min = int(pace_s_per_unit // 60)
-            pace_sec = int(pace_s_per_unit % 60)
-            stats["avg_pace"] = f"{pace_min}'{pace_sec:02d}\""
+            speed = self.poster.m2u(total_distance_m) / (total_time_s / 3600)
+            stats["avg_speed"] = f"{speed:.1f}"
 
         # Calculate streak (consecutive days)
         stats["streak"] = self._calculate_streak(tracks)

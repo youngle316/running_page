@@ -23,6 +23,7 @@ export interface Activity {
   distance: number;
   moving_time: string;
   type: string;
+  sport_type?: string;
   subtype: string;
   start_date: string;
   start_date_local: string;
